@@ -1,5 +1,6 @@
 // src/lib/stores/notebook.svelte.ts
 import { db } from '$lib/db/local';
+import { settingsStore } from './settings.svelte';
 import type { Note, Notebook, NoteType, SyncStatus } from '$lib/types';
 
 class NotebookStore {
@@ -14,13 +15,15 @@ class NotebookStore {
     error: null
   });
   private syncWorker: Worker | null = null;
+  private syncInterval: ReturnType<typeof setInterval> | null = null;
 
-    sortedNotes = $derived(this._notes.slice().sort((a, b) => a.position - b.position));
+  sortedNotes = $derived(this._notes.slice().sort((a, b) => a.position - b.position));
 
   constructor() {
     if (typeof window !== 'undefined') {
       this.initializeWorker();
       this.loadLocalData();
+      this.setupAutoSync();
     }
   }
 
@@ -48,27 +51,47 @@ class NotebookStore {
 
 
   private initializeWorker() {
-    this.syncWorker = new Worker(
-      new URL('$lib/workers/sync.worker.ts', import.meta.url),
-      { type: 'module' }
-    );
+    try {
+      console.log('🔧 Initializing sync worker...');
+      this.syncWorker = new Worker(
+        new URL('$lib/workers/sync.worker.ts', import.meta.url),
+        { type: 'module' }
+      );
 
-    this.syncWorker.onmessage = (event) => {
-      const { type, payload } = event.data;
-      
-      switch (type) {
-        case 'sync-status':
-          this._syncStatus = payload;
-          break;
-        case 'notes-updated':
-          this.handleRemoteNotesUpdate(payload);
-          break;
-        case 'sync-error':
-          this._syncStatus.error = payload.error;
-          this._syncStatus.syncing = false;
-          break;
-      }
-    };
+      this.syncWorker.onmessage = (event) => {
+        console.log('📨 Worker message received:', event.data);
+        const { type, payload } = event.data;
+        
+        switch (type) {
+          case 'sync-status':
+            this._syncStatus = payload;
+            break;
+          case 'notes-updated':
+            this.handleRemoteNotesUpdate(payload);
+            break;
+          case 'sync-error':
+            console.error('🚨 Sync worker error:', payload.error);
+            this._syncStatus.error = payload.error;
+            this._syncStatus.syncing = false;
+            break;
+        }
+      };
+
+      this.syncWorker.onerror = (error) => {
+        console.error('🚨 Sync worker error:', error);
+        this._syncStatus.error = 'Worker initialization failed';
+        this._syncStatus.syncing = false;
+      };
+
+      this.syncWorker.onmessageerror = (error) => {
+        console.error('🚨 Sync worker message error:', error);
+      };
+
+      console.log('✅ Sync worker initialized successfully');
+    } catch (error) {
+      console.error('🚨 Failed to initialize sync worker:', error);
+      this._syncStatus.error = 'Failed to initialize sync worker';
+    }
   }
 
   async loadLocalData() {
@@ -266,6 +289,44 @@ class NotebookStore {
     }
   }
 
+  // Manual sync methods for different levels
+  async manualSyncAll() {
+    console.log('🔄 Manual sync all requested');
+    this.requestSync();
+  }
+
+  async manualSyncNotebook(notebookId?: string) {
+    const targetId = notebookId || this._currentNotebook?.id;
+    if (!targetId) {
+      console.warn('⚠️ No notebook ID provided for manual sync');
+      return;
+    }
+    
+    console.log('🔄 Manual sync notebook requested:', targetId);
+    if (this.syncWorker && !this._syncStatus.syncing) {
+      this.syncWorker.postMessage({ 
+        type: 'sync',
+        filter: { type: 'notebook', id: targetId }
+      });
+    }
+  }
+
+  async manualSyncNote(noteId?: string) {
+    const targetId = noteId || this._currentNote?.id;
+    if (!targetId) {
+      console.warn('⚠️ No note ID provided for manual sync');
+      return;
+    }
+    
+    console.log('🔄 Manual sync note requested:', targetId);
+    if (this.syncWorker && !this._syncStatus.syncing) {
+      this.syncWorker.postMessage({ 
+        type: 'sync',
+        filter: { type: 'note', id: targetId }
+      });
+    }
+  }
+
   private async handleRemoteNotesUpdate(notes: Note[]) {
     // Merge remote changes with local data
     for (const remoteNote of notes) {
@@ -283,7 +344,44 @@ class NotebookStore {
     }
   }
 
+  private setupAutoSync() {
+    const settings = settingsStore.settings;
+    
+    // Set up initial auto-sync based on current settings
+    this.updateAutoSync(settings.autoSync, settings.syncInterval);
+  }
+  
+  // Method to manually update auto-sync settings (called from settings changes)
+  updateAutoSyncSettings() {
+    const settings = settingsStore.settings;
+    this.updateAutoSync(settings.autoSync, settings.syncInterval);
+  }
+  
+  private updateAutoSync(enabled: boolean, interval: number) {
+    // Clear existing interval
+    if (this.syncInterval) {
+      clearInterval(this.syncInterval);
+      this.syncInterval = null;
+    }
+    
+    // Set up new interval if enabled
+    if (enabled && interval > 0) {
+      this.syncInterval = setInterval(() => {
+        if (!this._syncStatus.syncing) {
+          this.requestSync();
+        }
+      }, interval * 1000);
+      
+      console.log(`📅 Auto-sync updated: every ${interval} seconds`);
+    } else {
+      console.log('📅 Auto-sync disabled');
+    }
+  }
+
   destroy() {
+    if (this.syncInterval) {
+      clearInterval(this.syncInterval);
+    }
     this.syncWorker?.terminate();
   }
 }

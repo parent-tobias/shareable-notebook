@@ -29,8 +29,10 @@
   "chordsheetjs": "^8.0.0",
   "dexie": "^3.2.4",
   "isomorphic-dompurify": "^2.3.0",
+  "lit": "^3.3.1",
   "marked": "^11.0.0",
   "monaco-editor": "^0.45.0",
-  "prismjs": "^1.29.0"
+  "prismjs": "^1.29.0",
+  "svguitar": "^2.4.1"
  }
 }

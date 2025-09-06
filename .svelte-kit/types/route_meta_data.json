@@ -1,5 +1,6 @@
 {
 	"/": [],
 	"/auth": [],
+	"/auth/callback": [],
 	"/notebook/[id]": []
 }

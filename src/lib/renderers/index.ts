@@ -2,7 +2,7 @@
 import type { Component } from 'svelte';
 import type { NoteType } from '$lib/types';
 import MarkdownRenderer from './MarkdownRenderer.svelte';
-import ChordProRenderer from './ChordProRenderer.svelte';
+import ChordproRenderer from './ChordproRenderer.svelte';
 import PlaintextRenderer from './PlaintextRenderer.svelte';
 import CodeRenderer from './CodeRenderer.svelte';
 
@@ -34,7 +34,7 @@ const rendererRegistry: Record<NoteType, RendererConfig> = {
     fileExtension: '.md'
   },
   chordpro: {
-    component: ChordProRenderer,
+    component: ChordproRenderer,
     name: 'ChordPro',
     description: 'Song lyrics with chord notations',
     icon: 'music',

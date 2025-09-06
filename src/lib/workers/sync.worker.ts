@@ -1,6 +1,7 @@
 // src/lib/workers/sync.worker.ts
 import { createClient } from '@supabase/supabase-js';
 import type { Note, Notebook } from '$lib/types';
+import { db } from '$lib/db/local';
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -12,7 +13,7 @@ interface WorkerMessage {
   payload?: any;
 }
 
-let syncInterval: number;
+let syncInterval: ReturnType<typeof setInterval> | undefined;
 let realtimeChannel: any;
 
 async function syncChanges() {
@@ -23,7 +24,7 @@ async function syncChanges() {
 
   try {
     // Get pending changes from IndexedDB
-    const pendingChanges = await getPendingChanges();
+    const pendingChanges = await db.getUnsyncedChanges();
     
     // Upload changes to Supabase
     for (const change of pendingChanges) {
@@ -38,11 +39,22 @@ async function syncChanges() {
             .from('notes')
             .upsert(change.data);
         }
+      } else if (change.entity === 'notebook') {
+        if (change.operation === 'delete') {
+          await supabase
+            .from('notebooks')
+            .delete()
+            .eq('id', change.entityId);
+        } else {
+          await supabase
+            .from('notebooks')
+            .upsert(change.data);
+        }
       }
     }
 
     // Mark changes as synced
-    await markChangesSynced(pendingChanges.map(c => c.id));
+    await db.markChangesSynced(pendingChanges.map(c => c.id));
 
     // Fetch latest changes from Supabase
     const { data: notes, error } = await supabase
@@ -68,9 +80,10 @@ async function syncChanges() {
       } 
     });
   } catch (error) {
+    console.error('Sync error:', error);
     postMessage({ 
       type: 'sync-error', 
-      payload: { error: error.message } 
+      payload: { error: error instanceof Error ? error.message : 'Unknown sync error' } 
     });
   }
 }

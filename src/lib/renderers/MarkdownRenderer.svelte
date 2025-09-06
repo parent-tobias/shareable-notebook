@@ -40,7 +40,13 @@
     </div>
   </div>
 {:else}
-  <div class="prose max-w-none" ondblclick={editable ? startEdit : undefined}>
-    {@html html}
-  </div>
+  {#if editable}
+    <button class="prose max-w-none text-left w-full" onclick={startEdit} onkeydown={(e) => e.key === 'Enter' && startEdit()}>
+      {@html html}
+    </button>
+  {:else}
+    <div class="prose max-w-none">
+      {@html html}
+    </div>
+  {/if}
 {/if}

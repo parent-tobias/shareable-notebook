@@ -8,6 +8,20 @@ declare global {
 		// interface PageState {}
 		// interface Platform {}
 	}
+	
+	// Custom element type definitions for Lit components
+	namespace svelteHTML {
+		interface IntrinsicElements {
+			'chord-diagram': {
+				chord?: string;
+				instrument?: string;
+			};
+			'chord-list': {
+				chords?: string[];
+				instrument?: string;
+			};
+		}
+	}
 }
 
 export {};

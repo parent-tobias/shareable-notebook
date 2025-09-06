@@ -10,7 +10,7 @@
   
   let editing = $state(false);
   let editContent = $state(content);
-  let textarea: HTMLTextAreaElement;
+  let textarea = $state<HTMLTextAreaElement | undefined>();
   
   function startEdit() {
     if (!editable) return;
@@ -43,7 +43,7 @@
       onkeydown={handleKeydown}
       class="w-full h-96 p-4 font-mono text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
       placeholder="Start typing..."
-    />
+    ></textarea>
     <div class="mt-2 space-x-2">
       <button onclick={save} class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
         Save

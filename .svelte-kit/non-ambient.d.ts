@@ -27,17 +27,18 @@ export {};
 
 declare module "$app/types" {
 	export interface AppTypes {
-		RouteId(): "/" | "/auth" | "/notebook" | "/notebook/[id]";
+		RouteId(): "/" | "/auth" | "/auth/callback" | "/notebook" | "/notebook/[id]";
 		RouteParams(): {
 			"/notebook/[id]": { id: string }
 		};
 		LayoutParams(): {
 			"/": { id?: string };
 			"/auth": Record<string, never>;
+			"/auth/callback": Record<string, never>;
 			"/notebook": { id?: string };
 			"/notebook/[id]": { id: string }
 		};
-		Pathname(): "/" | "/auth" | "/auth/" | "/notebook" | "/notebook/" | `/notebook/${string}` & {} | `/notebook/${string}/` & {};
+		Pathname(): "/" | "/auth" | "/auth/" | "/auth/callback" | "/auth/callback/" | "/notebook" | "/notebook/" | `/notebook/${string}` & {} | `/notebook/${string}/` & {};
 		ResolvedPathname(): `${"" | `/${string}`}${ReturnType<AppTypes['Pathname']>}`;
 		Asset(): "/robots.txt" | string & {};
 	}

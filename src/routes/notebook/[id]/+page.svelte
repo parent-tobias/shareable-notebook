@@ -1,13 +1,53 @@
 <!-- src/routes/notebook/[id]/+page.svelte -->
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { notebookStore } from '$lib/stores/notebook.svelte';
-  import { getAvailableRenderers, getRendererConfig, getDefaultContent } from '$lib/renderers';
+  import { getAvailableRenderers, getRendererConfig } from '$lib/renderers';
   import NoteEditor from '$lib/components/NoteEditor.svelte';
   import type { Note, NoteType } from '$lib/types';
-  
+
+   // In your notebook page component
+  import { testSupabaseConnection } from '$lib/utils/supabase-test';
+
+  onMount(async () => {
+    console.log('🔍 Environment check:', {
+      hasWorker: typeof Worker !== 'undefined',
+      hasIndexedDB: typeof indexedDB !== 'undefined',
+      supabaseUrl: import.meta.env.VITE_SUPABASE_URL?.slice(0, 20) + '...',
+      nodeEnv: import.meta.env.MODE
+    });
+    
+    // Test basic worker creation first
+    console.log('🧪 Testing worker creation...');
+    try {
+      const testWorker = new Worker(
+        new URL('$lib/workers/test.worker.ts', import.meta.url),
+        { type: 'module' }
+      );
+      testWorker.onmessage = (event) => {
+        console.log('✅ Test worker response:', event.data);
+        testWorker.terminate();
+      };
+      testWorker.onerror = (error) => {
+        console.error('🚨 Test worker error:', error);
+      };
+      testWorker.postMessage({ test: 'hello' });
+    } catch (error) {
+      console.error('🚨 Worker creation failed:', error);
+    }
+    
+    // Test Supabase connection
+    console.log('🧪 Testing Supabase connection...');
+    const supabaseResult = await testSupabaseConnection();
+    console.log('Supabase connection:', supabaseResult);
+  });
+
+
   $effect(() => {
-    notebookStore.selectNotebook($page.params.id);
+    if ($page.params.id) {
+      notebookStore.selectNotebook($page.params.id);
+    }
   });
   
   const notebook = $derived(notebookStore.currentNotebook);
@@ -24,9 +64,8 @@
   async function createNote(type?: NoteType, title?: string) {
     const noteType = type || newNoteType;
     const noteTitle = title || newNoteTitle || `Untitled ${getRendererConfig(noteType).name}`;
-    const defaultContent = getDefaultContent(noteType);
     
-    const note = await notebookStore.createNote(noteType, noteTitle, defaultContent);
+    const note = await notebookStore.createNote(noteType, noteTitle);
     selectedNote = note;
     
     // Reset modal state
@@ -45,13 +84,10 @@
     selectedNote = note;
   }
   
-  async function updateNoteContent(noteId: string, content: string) {
-    await notebookStore.updateNote(noteId, { content });
-  }
   
   async function deleteNote(noteId: string) {
     if (confirm('Are you sure you want to delete this note?')) {
-      await notebookStore.deleteNote(noteId);
+      // For now, just remove from local state - will implement proper delete later
       if (selectedNote?.id === noteId) {
         selectedNote = null;
       }
@@ -120,31 +156,49 @@
     
     <div class="flex-1 overflow-y-auto space-y-2">
       {#each notes as note}
-        <button
-          onclick={() => selectNote(note)}
-          class="w-full text-left p-2 rounded hover:bg-gray-100 group relative"
-          class:bg-blue-100={selectedNote?.id === note.id}
-        >
-          <div class="flex items-start justify-between">
-            <div class="flex-1 min-w-0">
-              <div class="font-medium truncate">{note.title}</div>
-              <div class="text-xs text-gray-500 flex items-center gap-1">
-                <span class="inline-block px-1.5 py-0.5 bg-gray-200 rounded text-xs">
-                  {getRendererConfig(note.type).name}
-                </span>
+        <div class="w-full p-2 rounded hover:bg-gray-100 group relative" class:bg-blue-100={selectedNote?.id === note.id}>
+          <button
+            onclick={() => selectNote(note)}
+            class="w-full text-left"
+          >
+            <div class="flex items-start justify-between">
+              <div class="flex-1 min-w-0 pr-6">
+                <div class="font-medium truncate">{note.title}</div>
+                <div class="text-xs text-gray-500 flex items-center gap-1">
+                  <span class="inline-block px-1.5 py-0.5 bg-gray-200 rounded text-xs">
+                    {getRendererConfig(note.type).name}
+                  </span>
+                </div>
               </div>
             </div>
-            <div
-              onclick={(e) => { e.stopPropagation(); deleteNote(note.id); }}
-              class="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded"
-              title="Delete note"
+          </button>
+          <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex items-center gap-1">
+            <button
+              onclick={(e) => { 
+                e.stopPropagation(); 
+                notebookStore.manualSyncNote(note.id); 
+              }}
+              class="p-1 hover:bg-blue-100 rounded disabled:opacity-50"
+              class:animate-spin={syncStatus.syncing}
+              disabled={syncStatus.syncing}
+              aria-label="Sync note: {note.title}"
+              title="Sync this note"
             >
-              <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+            </button>
+            <button
+              onclick={(e) => { e.stopPropagation(); deleteNote(note.id); }}
+              class="p-1 hover:bg-red-100 rounded"
+              aria-label="Delete note: {note.title}"
+            >
+              <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
               </svg>
-            </div>
+            </button>
           </div>
-        </button>
+        </div>
       {/each}
     </div>
   </aside>
@@ -154,8 +208,8 @@
     {#if selectedNote}
       <NoteEditor 
         note={selectedNote}
-        onUpdate={(updates) => notebookStore.updateNote(selectedNote.id, updates)}
-        onDelete={() => deleteNote(selectedNote.id)}
+        onUpdate={(updates) => selectedNote && notebookStore.updateNote(selectedNote.id, updates)}
+        onDelete={() => selectedNote && deleteNote(selectedNote.id)}
       />
     {:else}
       <div class="flex items-center justify-center h-full text-gray-400">
@@ -187,7 +241,6 @@
             bind:value={newNoteTitle}
             placeholder="Enter note title..."
             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-            autofocus
           />
         </div>
         

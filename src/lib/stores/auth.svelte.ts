@@ -46,11 +46,17 @@ class AuthStore {
           
           // Send session to web worker for sync
           if (typeof window !== 'undefined' && window.Worker) {
-            const worker = new Worker(
-              new URL('$lib/workers/sync.worker.ts', import.meta.url),
-              { type: 'module' }
-            );
-            worker.postMessage({ type: 'auth', payload: { session } });
+            try {
+              console.log('🔧 Creating auth worker for session update...');
+              const worker = new Worker(
+                new URL('$lib/workers/sync.worker.ts', import.meta.url),
+                { type: 'module' }
+              );
+              worker.postMessage({ type: 'auth', payload: { session } });
+              console.log('✅ Auth session sent to worker');
+            } catch (error) {
+              console.error('🚨 Failed to create/send to auth worker:', error);
+            }
           }
         }
       );
@@ -171,6 +177,39 @@ class AuthStore {
       return { 
         success: false, 
         error: error.message || 'Failed to send reset email' 
+      };
+    }
+  }
+
+  async handleAuthCallback() {
+    try {
+      console.log('🔍 Handling auth callback...');
+      
+      // Get the session from the callback URL
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('🚨 Auth callback error:', error);
+        throw error;
+      }
+      
+      if (data.session) {
+        console.log('✅ Auth callback: Session obtained successfully');
+        this._session = data.session;
+        this._user = data.session.user;
+        return { success: true };
+      } else {
+        console.warn('⚠️  Auth callback: No session found');
+        return { 
+          success: false, 
+          error: 'No authentication session found' 
+        };
+      }
+    } catch (error: any) {
+      console.error('🚨 Auth callback exception:', error);
+      return { 
+        success: false, 
+        error: error.message || 'Failed to process authentication callback' 
       };
     }
   }
