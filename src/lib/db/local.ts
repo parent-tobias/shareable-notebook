@@ -9,7 +9,7 @@ interface PendingChange {
   operation: 'create' | 'update' | 'delete';
   data: any;
   timestamp: number;
-  synced: boolean;
+  synced: number;
 }
 
 class LocalDatabase extends Dexie {
@@ -36,7 +36,7 @@ class LocalDatabase extends Dexie {
         operation: 'update',
         data: note,
         timestamp: Date.now(),
-        synced: false
+        synced: 0
       });
     });
   }
@@ -46,7 +46,7 @@ class LocalDatabase extends Dexie {
   }
 
   async markChangesSynced(ids: string[]) {
-    await this.pendingChanges.where('id').anyOf(ids).modify({ synced: true });
+    await this.pendingChanges.where('id').anyOf(ids).modify({ synced: 1 });
   }
 }
 
