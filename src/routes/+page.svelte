@@ -100,24 +100,24 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
   <!-- Header -->
   <div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900 mb-2">Welcome back!</h1>
-    <p class="text-gray-600">You have {notebooks.length} notebook{notebooks.length !== 1 ? 's' : ''}</p>
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Welcome back!</h1>
+    <p class="text-gray-600 dark:text-gray-300">You have {notebooks.length} notebook{notebooks.length !== 1 ? 's' : ''}</p>
   </div>
   
   <!-- Quick Actions -->
   {#if recentNotebooks.length > 0}
     <section class="mb-8" aria-labelledby="recent-notebooks">
-      <h2 id="recent-notebooks" class="text-lg font-semibold text-gray-900 mb-4">Recent Notebooks</h2>
+      <h2 id="recent-notebooks" class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Notebooks</h2>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         {#each recentNotebooks as notebook}
           <button
             onclick={() => openNotebook(notebook)}
-            class="p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all text-left"
+            class="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-500 hover:shadow-md transition-all text-left"
           >
             <div class="flex items-start justify-between">
               <div class="flex-1">
-                <h3 class="font-medium text-gray-900 truncate">{notebook.title}</h3>
-                <p class="text-sm text-gray-500 mt-1">Updated {formatDate(notebook.updated_at)}</p>
+                <h3 class="font-medium text-gray-900 dark:text-white truncate">{notebook.title}</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Updated {formatDate(notebook.updated_at)}</p>
               </div>
               <svg class="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
@@ -139,7 +139,7 @@
         type="text"
         bind:value={searchQuery}
         placeholder="Search notebooks..."
-        class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
       />
       <svg class="absolute left-3 top-2.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -147,11 +147,12 @@
     </div>
     
     <!-- View Toggle -->
-    <div class="flex items-center space-x-2 bg-white border border-gray-300 rounded-lg p-1">
+    <div class="flex items-center space-x-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-1">
       <button
         onclick={() => viewMode = 'grid'}
         class="p-1.5 rounded"
         class:bg-gray-100={viewMode === 'grid'}
+        class:dark:bg-gray-700={viewMode === 'grid'}
         aria-label="Switch to grid view"
         aria-pressed={viewMode === 'grid'}
       >
@@ -163,6 +164,7 @@
         onclick={() => viewMode = 'list'}
         class="p-1.5 rounded"
         class:bg-gray-100={viewMode === 'list'}
+        class:dark:bg-gray-700={viewMode === 'list'}
         aria-label="Switch to list view"
         aria-pressed={viewMode === 'list'}
       >
@@ -187,12 +189,12 @@
   <!-- Notebooks Grid/List -->
   <main aria-label="Notebooks list">
   {#if filteredNotebooks.length === 0}
-    <div class="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
+    <div class="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
       <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
       </svg>
-      <h3 class="mt-2 text-sm font-medium text-gray-900">No notebooks</h3>
-      <p class="mt-1 text-sm text-gray-500">Get started by creating a new notebook.</p>
+      <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No notebooks</h3>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Get started by creating a new notebook.</p>
       <div class="mt-6">
         <button
           onclick={() => showCreateModal = true}
@@ -205,18 +207,18 @@
   {:else if viewMode === 'grid'}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {#each filteredNotebooks as notebook}
-        <div class="bg-white rounded-lg border border-gray-200 hover:border-blue-500 hover:shadow-lg transition-all group relative">
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-500 hover:shadow-lg transition-all group relative">
           <button
             onclick={() => openNotebook(notebook)}
             class="w-full text-left p-6 rounded-lg"
           >
             <div class="flex items-start justify-between mb-4">
-              <h3 class="text-lg font-semibold text-gray-900 truncate flex-1 pr-8">{notebook.title}</h3>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white truncate flex-1 pr-8">{notebook.title}</h3>
             </div>
             {#if notebook.description}
-              <p class="text-gray-600 text-sm mb-4 line-clamp-2">{notebook.description}</p>
+              <p class="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2">{notebook.description}</p>
             {/if}
-            <div class="flex items-center text-xs text-gray-500">
+            <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
               <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
@@ -225,7 +227,7 @@
           </button>
           <button
             onclick={(e) => deleteNotebook(e, notebook.id)}
-            class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded"
+            class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
             aria-label="Delete notebook: {notebook.title}"
           >
             <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -236,29 +238,29 @@
       {/each}
     </div>
   {:else}
-    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
       <table class="min-w-full divide-y divide-gray-200" aria-label="Notebooks list">
-        <thead class="bg-gray-50">
+        <thead class="bg-gray-50 dark:bg-gray-700">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" scope="col">Title</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" scope="col">Description</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" scope="col">Last Updated</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" scope="col">Title</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" scope="col">Description</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" scope="col">Last Updated</th>
             <th class="relative px-6 py-3" scope="col"><span class="sr-only">Actions</span></th>
           </tr>
         </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
+        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
           {#each filteredNotebooks as notebook}
             <tr 
               onclick={() => openNotebook(notebook)}
-              class="hover:bg-gray-50 cursor-pointer"
+              class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
             >
               <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900">{notebook.title}</div>
+                <div class="text-sm font-medium text-gray-900 dark:text-white">{notebook.title}</div>
               </td>
               <td class="px-6 py-4">
-                <div class="text-sm text-gray-500 truncate max-w-xs">{notebook.description || '—'}</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs">{notebook.description || '—'}</div>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                 {formatDate(notebook.updated_at)}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -299,12 +301,12 @@
 <!-- Create Notebook Modal -->
 {#if showCreateModal}
   <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50" role="dialog" aria-labelledby="create-modal-title" aria-modal="true">
-    <div bind:this={modalElement} class="bg-white rounded-lg max-w-md w-full p-6">
-      <h2 id="create-modal-title" class="text-lg font-semibold mb-4">Create New Notebook</h2>
+    <div bind:this={modalElement} class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+      <h2 id="create-modal-title" class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Create New Notebook</h2>
       
       <div class="space-y-4">
         <div>
-          <label for="title" class="block text-sm font-medium text-gray-700 mb-1">
+          <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Title
           </label>
           <input
@@ -312,12 +314,12 @@
             type="text"
             bind:value={newNotebookTitle}
             placeholder="My Notebook"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
           />
         </div>
         
         <div>
-          <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
+          <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Description (optional)
           </label>
           <textarea
@@ -325,7 +327,7 @@
             bind:value={newNotebookDescription}
             placeholder="What's this notebook about?"
             rows="3"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
           ></textarea>
         </div>
       </div>
@@ -333,7 +335,7 @@
       <div class="mt-6 flex justify-end space-x-3">
         <button
           onclick={() => showCreateModal = false}
-          class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+          class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800"
         >
           Cancel
         </button>

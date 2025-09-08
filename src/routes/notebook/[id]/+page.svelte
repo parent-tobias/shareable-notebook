@@ -87,7 +87,7 @@
   
   async function deleteNote(noteId: string) {
     if (confirm('Are you sure you want to delete this note?')) {
-      // For now, just remove from local state - will implement proper delete later
+      await notebookStore.deleteNote(noteId);
       if (selectedNote?.id === noteId) {
         selectedNote = null;
       }
@@ -97,10 +97,10 @@
 
 <div class="flex h-screen">
   <!-- Sidebar -->
-  <aside class="w-64 border-r bg-gray-50 p-4 flex flex-col">
+  <aside class="w-64 border-r bg-gray-50 dark:bg-gray-800 dark:border-gray-600 p-4 flex flex-col">
     <div class="mb-4">
-      <h2 class="text-lg font-semibold">{notebook?.title}</h2>
-      <div class="text-sm text-gray-500">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{notebook?.title}</h2>
+      <div class="text-sm text-gray-500 dark:text-gray-400">
         {#if syncStatus.syncing}
           Syncing...
         {:else if syncStatus.lastSynced}
@@ -119,7 +119,7 @@
           {#each availableRenderers as { type, config }}
             <button
               onclick={() => createNote(type)}
-              class="p-2 text-xs bg-white border rounded hover:bg-gray-100 flex flex-col items-center"
+              class="p-2 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 flex flex-col items-center text-gray-900 dark:text-white"
               title={config.description}
             >
               <span class="text-lg mb-1">
@@ -134,7 +134,7 @@
         </div>
         <button
           onclick={() => showQuickCreate = false}
-          class="w-full text-sm text-gray-500 hover:text-gray-700"
+          class="w-full text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
         >
           Cancel
         </button>
@@ -147,7 +147,7 @@
         </button>
         <button 
           onclick={() => showQuickCreate = true}
-          class="w-full px-4 py-1 text-sm text-gray-600 hover:text-gray-800"
+          class="w-full px-4 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
         >
           Quick Create →
         </button>
@@ -156,16 +156,16 @@
     
     <div class="flex-1 overflow-y-auto space-y-2">
       {#each notes as note}
-        <div class="w-full p-2 rounded hover:bg-gray-100 group relative" class:bg-blue-100={selectedNote?.id === note.id}>
+        <div class="w-full p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 group relative" class:bg-blue-100={selectedNote?.id === note.id} class:dark:bg-blue-900={selectedNote?.id === note.id}>
           <button
             onclick={() => selectNote(note)}
             class="w-full text-left"
           >
             <div class="flex items-start justify-between">
               <div class="flex-1 min-w-0 pr-6">
-                <div class="font-medium truncate">{note.title}</div>
-                <div class="text-xs text-gray-500 flex items-center gap-1">
-                  <span class="inline-block px-1.5 py-0.5 bg-gray-200 rounded text-xs">
+                <div class="font-medium text-gray-900 dark:text-white truncate">{note.title}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                  <span class="inline-block px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 rounded text-xs text-gray-700 dark:text-gray-300">
                     {getRendererConfig(note.type).name}
                   </span>
                 </div>
@@ -217,7 +217,7 @@
           <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
           </svg>
-          <p class="mt-2">Select a note or create a new one</p>
+          <p class="mt-2 text-gray-500 dark:text-gray-400">Select a note or create a new one</p>
         </div>
       </div>
     {/if}
@@ -227,12 +227,12 @@
 <!-- Create Note Modal -->
 {#if showCreateNoteModal}
   <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-lg max-w-md w-full p-6">
-      <h2 class="text-lg font-semibold mb-4">Create New Note</h2>
+    <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Create New Note</h2>
       
       <div class="space-y-4">
         <div>
-          <label for="noteTitle" class="block text-sm font-medium text-gray-700 mb-1">
+          <label for="noteTitle" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Title
           </label>
           <input
@@ -240,17 +240,17 @@
             type="text"
             bind:value={newNoteTitle}
             placeholder="Enter note title..."
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
           />
         </div>
         
         <div>
-          <label for="noteType" class="block text-sm font-medium text-gray-700 mb-1">
+          <label for="noteType" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Note Type
           </label>
           <div class="space-y-2">
             {#each availableRenderers as { type, config }}
-              <label class="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+              <label class="flex items-start p-3 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-800"
                 class:border-blue-500={newNoteType === type}
                 class:bg-blue-50={newNoteType === type}
               >
@@ -262,13 +262,13 @@
                   class="mt-1 mr-3"
                 />
                 <div class="flex-1">
-                  <div class="font-medium text-gray-900">
+                  <div class="font-medium text-gray-900 dark:text-white">
                     {config.name}
                     {#if config.fileExtension}
-                      <span class="text-xs text-gray-500 ml-1">({config.fileExtension})</span>
+                      <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">({config.fileExtension})</span>
                     {/if}
                   </div>
-                  <div class="text-sm text-gray-600 mt-0.5">{config.description}</div>
+                  <div class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{config.description}</div>
                 </div>
               </label>
             {/each}
@@ -276,9 +276,9 @@
         </div>
         
         {#if getRendererConfig(newNoteType).defaultContent}
-          <div class="p-3 bg-gray-50 rounded-lg">
-            <div class="text-xs font-medium text-gray-500 mb-1">Preview:</div>
-            <pre class="text-xs text-gray-600 whitespace-pre-wrap font-mono">
+          <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Preview:</div>
+            <pre class="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap font-mono">
               {getRendererConfig(newNoteType).defaultContent?.slice(0, 100)}...
             </pre>
           </div>
@@ -288,7 +288,7 @@
       <div class="mt-6 flex justify-end space-x-3">
         <button
           onclick={() => showCreateNoteModal = false}
-          class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+          class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800"
         >
           Cancel
         </button>

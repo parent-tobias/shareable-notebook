@@ -1,1 +1,49 @@
 @import 'tailwindcss';
+
+/* Font size settings */
+html.font-small {
+  font-size: 14px;
+}
+
+html.font-medium {
+  font-size: 16px; /* Default */
+}
+
+html.font-large {
+  font-size: 18px;
+}
+
+/* Compact mode settings */
+html.compact-mode {
+  /* Reduce padding and margins */
+}
+
+html.compact-mode .max-w-7xl {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+html.compact-mode .p-4 {
+  padding: 0.75rem !important;
+}
+
+html.compact-mode .p-6 {
+  padding: 1rem !important;
+}
+
+html.compact-mode .py-8 {
+  padding-top: 1rem !important;
+  padding-bottom: 1rem !important;
+}
+
+html.compact-mode .mb-8 {
+  margin-bottom: 1rem !important;
+}
+
+html.compact-mode .gap-6 {
+  gap: 1rem !important;
+}
+
+html.compact-mode .space-y-2 > * + * {
+  margin-top: 0.5rem !important;
+}

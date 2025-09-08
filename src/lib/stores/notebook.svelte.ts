@@ -88,6 +88,20 @@ class NotebookStore {
       };
 
       console.log('✅ Sync worker initialized successfully');
+      
+      // Try to get initial auth session and send to worker
+      setTimeout(async () => {
+        try {
+          const { authStore } = await import('./auth.svelte');
+          if (authStore.session) {
+            console.log('🔐 Sending initial auth session to sync worker');
+            this.updateAuthSession(authStore.session);
+          }
+        } catch (error) {
+          console.warn('⚠️  Could not get initial auth session:', error);
+        }
+      }, 100); // Small delay to ensure auth store is initialized
+      
     } catch (error) {
       console.error('🚨 Failed to initialize sync worker:', error);
       this._syncStatus.error = 'Failed to initialize sync worker';
@@ -120,11 +134,24 @@ class NotebookStore {
   }
 
   async createNotebook(data: { title: string; description?: string }) {
+    // Get actual user ID from auth store
+    let userId: string;
+    try {
+      const { authStore } = await import('./auth.svelte');
+      userId = authStore.user?.id || 'unknown-user';
+      if (userId === 'unknown-user') {
+        throw new Error('User not authenticated');
+      }
+    } catch (error) {
+      console.error('❌ Cannot create notebook: user not authenticated');
+      throw new Error('User authentication required');
+    }
+
     const notebook: Notebook = {
       id: crypto.randomUUID(),
       title: data.title,
       description: data.description,
-      owner_id: 'current-user', // Should come from authStore.user.id
+      owner_id: userId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       settings: {
@@ -162,7 +189,7 @@ class NotebookStore {
     if (!notebook) return null;
 
     const updatedNotebook = {
-      ...notebook,
+      ...JSON.parse(JSON.stringify(notebook)),
       ...updates,
       updated_at: new Date().toISOString()
     };
@@ -202,7 +229,7 @@ class NotebookStore {
     if (!notebook) return;
 
     const deletedNotebook = {
-      ...notebook,
+      ...JSON.parse(JSON.stringify(notebook)),
       deleted: true,
       updated_at: new Date().toISOString()
     };
@@ -238,6 +265,19 @@ class NotebookStore {
   async createNote(type: NoteType, title: string = 'Untitled') {
     if (!this._currentNotebook) return null;
 
+    // Get actual user ID from auth store
+    let userId: string;
+    try {
+      const { authStore } = await import('./auth.svelte');
+      userId = authStore.user?.id || 'unknown-user';
+      if (userId === 'unknown-user') {
+        throw new Error('User not authenticated');
+      }
+    } catch (error) {
+      console.error('❌ Cannot create note: user not authenticated');
+      throw new Error('User authentication required');
+    }
+
     const note: Note = {
       id: crypto.randomUUID(),
       notebook_id: this._currentNotebook.id,
@@ -247,8 +287,8 @@ class NotebookStore {
       position: this._notes.length,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      created_by: 'current-user', // Will be replaced with actual user ID
-      last_modified_by: 'current-user',
+      created_by: userId,
+      last_modified_by: userId,
       version: 1
     };
 
@@ -267,7 +307,7 @@ class NotebookStore {
     if (noteIndex === -1) return;
 
     const updatedNote = {
-      ...this._notes[noteIndex],
+      ...JSON.parse(JSON.stringify(this._notes[noteIndex])),
       ...updates,
       updated_at: new Date().toISOString(),
       version: this._notes[noteIndex].version + 1
@@ -283,9 +323,53 @@ class NotebookStore {
     this.requestSync();
   }
 
+  async deleteNote(noteId: string) {
+    const noteIndex = this._notes.findIndex(n => n.id === noteId);
+    if (noteIndex === -1) return;
+
+    const note = this._notes[noteIndex];
+    const deletedNote = {
+      ...JSON.parse(JSON.stringify(note)),
+      deleted: true,
+      updated_at: new Date().toISOString(),
+      version: note.version + 1
+    };
+
+    // Update in local database (soft delete)
+    await db.notes.put(deletedNote);
+    
+    // Add to pending changes
+    await db.pendingChanges.add({
+      id: crypto.randomUUID(),
+      entity: 'note',
+      entityId: noteId,
+      operation: 'delete',
+      data: { id: noteId, deleted: true },
+      timestamp: Date.now(),
+      synced: false
+    });
+
+    // Remove from local state
+    this._notes = this._notes.filter(n => n.id !== noteId);
+    
+    if (this._currentNote?.id === noteId) {
+      this._currentNote = null;
+    }
+    
+    this.requestSync();
+  }
+
   private requestSync() {
     if (this.syncWorker && !this._syncStatus.syncing) {
       this.syncWorker.postMessage({ type: 'sync' });
+    }
+  }
+
+  // Method to update auth session in the sync worker
+  updateAuthSession(session: any) {
+    console.log('🔐 Notebook store: Updating auth session in sync worker');
+    if (this.syncWorker) {
+      this.syncWorker.postMessage({ type: 'auth', payload: { session } });
     }
   }
 

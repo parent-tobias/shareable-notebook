@@ -44,18 +44,17 @@ class AuthStore {
           this._session = session;
           this._user = session?.user ?? null;
           
-          // Send session to web worker for sync
-          if (typeof window !== 'undefined' && window.Worker) {
+          // Send session to notebook store's sync worker
+          if (typeof window !== 'undefined') {
             try {
-              console.log('🔧 Creating auth worker for session update...');
-              const worker = new Worker(
-                new URL('$lib/workers/sync.worker.ts', import.meta.url),
-                { type: 'module' }
-              );
-              worker.postMessage({ type: 'auth', payload: { session } });
-              console.log('✅ Auth session sent to worker');
+              console.log('🔧 Sending auth session to notebook store...');
+              // Use dynamic import to avoid circular dependency
+              import('./notebook.svelte').then(({ notebookStore }) => {
+                notebookStore.updateAuthSession(session);
+                console.log('✅ Auth session sent to notebook store');
+              });
             } catch (error) {
-              console.error('🚨 Failed to create/send to auth worker:', error);
+              console.error('🚨 Failed to send auth session:', error);
             }
           }
         }

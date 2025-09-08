@@ -3,6 +3,34 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<script>
+			// Apply theme immediately to prevent FOUC
+			(function() {
+				try {
+					const stored = localStorage.getItem('user-settings');
+					const settings = stored ? JSON.parse(stored) : { theme: 'system' };
+					let theme = settings.theme;
+					
+					if (theme === 'system') {
+						theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+					}
+					
+					document.documentElement.classList.add(theme);
+					document.documentElement.setAttribute('data-theme', theme);
+					
+					// Also apply font size and compact mode
+					if (settings.fontSize) {
+						document.documentElement.classList.add('font-' + settings.fontSize);
+					}
+					if (settings.compactMode) {
+						document.documentElement.classList.add('compact-mode');
+					}
+				} catch (e) {
+					// Fallback to light theme
+					document.documentElement.classList.add('light');
+				}
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

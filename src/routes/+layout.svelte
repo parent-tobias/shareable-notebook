@@ -23,6 +23,12 @@
     // Set up global error handling for better debugging
     setupGlobalErrorHandling();
     authStore.initialize();
+    
+    // Ensure settings are applied (in case constructor didn't run)
+    if (settingsStore.settings) {
+      console.log('🔧 Re-applying settings in layout onMount');
+      settingsStore.updateSettings({}); // This will re-apply all settings
+    }
   });
   
   // Set up reactive auto-sync when settings change

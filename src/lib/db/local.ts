@@ -27,10 +27,12 @@ class LocalDatabase extends Dexie {
   }
 
   async saveNote(note: Note) {
+    console.log('💾 Local DB: Saving note:', note.id, note.title);
     await this.transaction('rw', this.notes, this.pendingChanges, async () => {
       await this.notes.put(note);
+      const changeId = crypto.randomUUID();
       await this.pendingChanges.add({
-        id: crypto.randomUUID(),
+        id: changeId,
         entity: 'note',
         entityId: note.id,
         operation: 'update',
@@ -38,11 +40,12 @@ class LocalDatabase extends Dexie {
         timestamp: Date.now(),
         synced: false
       });
+      console.log('💾 Local DB: Added pending change:', changeId, 'for note:', note.id);
     });
   }
 
   async getUnsyncedChanges() {
-    return await this.pendingChanges.where('synced').equals(0).toArray();
+    return await this.pendingChanges.where('synced').equals(false).toArray();
   }
 
   async markChangesSynced(ids: string[]) {

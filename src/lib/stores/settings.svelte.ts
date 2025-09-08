@@ -32,6 +32,8 @@ class SettingsStore {
     if (browser) {
       this.loadSettings();
       this.applyTheme();
+      this.applyFontSize();
+      this.applyCompactMode();
     }
   }
 
@@ -103,9 +105,33 @@ class SettingsStore {
         root.classList.add(newTheme);
         root.setAttribute('data-theme', newTheme);
         console.log('🎨 System theme changed to:', newTheme);
+        console.log('🎨 HTML classes after system theme change:', root.className);
       };
       mediaQuery.addEventListener('change', this.mediaQueryListener);
     }
+  }
+
+  private applyFontSize() {
+    if (!browser) return;
+    
+    const root = document.documentElement;
+    root.classList.remove('font-small', 'font-medium', 'font-large');
+    root.classList.add(`font-${this._settings.fontSize}`);
+    
+    console.log('🔤 Applied font size:', this._settings.fontSize);
+  }
+
+  private applyCompactMode() {
+    if (!browser) return;
+    
+    const root = document.documentElement;
+    if (this._settings.compactMode) {
+      root.classList.add('compact-mode');
+    } else {
+      root.classList.remove('compact-mode');
+    }
+    
+    console.log('📏 Applied compact mode:', this._settings.compactMode);
   }
 
   updateSetting<K extends keyof UserSettings>(key: K, value: UserSettings[K]) {
@@ -114,11 +140,17 @@ class SettingsStore {
 
     if (key === 'theme') {
       this.applyTheme();
+    } else if (key === 'fontSize') {
+      this.applyFontSize();
+    } else if (key === 'compactMode') {
+      this.applyCompactMode();
     }
   }
 
   updateSettings(newSettings: Partial<UserSettings>) {
     const hadThemeChange = newSettings.theme && newSettings.theme !== this._settings.theme;
+    const hadFontSizeChange = newSettings.fontSize && newSettings.fontSize !== this._settings.fontSize;
+    const hadCompactModeChange = newSettings.compactMode !== undefined && newSettings.compactMode !== this._settings.compactMode;
     
     this._settings = { ...this._settings, ...newSettings };
     this.saveSettings();
@@ -126,12 +158,20 @@ class SettingsStore {
     if (hadThemeChange) {
       this.applyTheme();
     }
+    if (hadFontSizeChange) {
+      this.applyFontSize();
+    }
+    if (hadCompactModeChange) {
+      this.applyCompactMode();
+    }
   }
 
   resetToDefaults() {
     this._settings = { ...DEFAULT_SETTINGS };
     this.saveSettings();
     this.applyTheme();
+    this.applyFontSize();
+    this.applyCompactMode();
   }
 
   toggleTheme() {
