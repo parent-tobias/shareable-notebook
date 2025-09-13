@@ -9,15 +9,23 @@
   
   onMount(async () => {
     try {
-      console.log('🔍 Auth callback: Processing OAuth callback...');
-      
+      console.log('🔍 Auth callback: Starting OAuth callback processing...');
+      console.log('🔍 Current URL:', window.location.href);
+      console.log('🔍 URL hash:', window.location.hash);
+      console.log('🔍 URL search:', window.location.search);
+
+      // Add a small delay to ensure DOM is ready
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Handle the OAuth callback
       const result = await authStore.handleAuthCallback();
-      
+
       if (result.success) {
         console.log('✅ Auth callback: OAuth authentication successful');
-        // Redirect to home page
-        goto('/');
+        // Small delay before redirect to ensure state is updated
+        setTimeout(() => {
+          goto('/');
+        }, 500);
       } else {
         console.error('🚨 Auth callback error:', result.error);
         error = result.error || 'Authentication failed';

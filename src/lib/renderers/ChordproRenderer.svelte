@@ -1,7 +1,8 @@
 <!-- src/lib/renderers/ChordProRenderer.svelte -->
 <script lang="ts">
   import chordsheetjs from 'chordsheetjs';
-  
+  import { settingsStore } from '$lib/stores/settings.svelte';
+
   import { onMount } from 'svelte';
   
   // Client-side only imports to avoid SSR issues
@@ -25,6 +26,8 @@
   let mode = $state<'html' | 'text'>('html');
   let showChords = $state(false);
   let selectedInstrument = $state('Standard Ukulele');
+
+  const chordListPosition = $derived(settingsStore.settings.chordListPosition);
   
   // Format the chord sheet using your approach
   const formattedSheet = $derived(() => {
@@ -66,14 +69,38 @@
   // Available instruments from your music utils
   const availableInstruments = [
     'Standard Ukulele',
-    'Baritone Ukulele', 
+    'Baritone Ukulele',
     '5ths tuned Ukulele',
     'Standard Guitar',
     'Drop-D Guitar'
   ];
+
+  // Helper function to create the chord list component
+  const createChordList = () => {
+    if (!showChords || extractedChords().length === 0) return null;
+
+    // We'll create this as a Svelte snippet in the template
+    return {
+      chords: extractedChords(),
+      instrument: selectedInstrument,
+      position: chordListPosition
+    };
+  };
 </script>
 
-<div class="songsheet-panel">
+<!-- Chord list snippet for reuse -->
+{#snippet chordListComponent()}
+  {#if showChords && extractedChords().length > 0}
+    <div class="chord-charts-section chord-list-{chordListPosition}">
+      <chord-list
+        chords={JSON.stringify(extractedChords())}
+        instrument={selectedInstrument}
+      ></chord-list>
+    </div>
+  {/if}
+{/snippet}
+
+<div class="songsheet-panel" data-chord-position={chordListPosition}>
   <!-- Header controls -->
   <div class="chord-sheet-header">
     <div class="header-controls">
@@ -117,27 +144,37 @@
     </div>
   </div>
   
-  <!-- Chord charts section -->
-   <h3>Extracted chords length: { extractedChords().length }</h3>
-  {#if showChords && extractedChords().length > 0}
-    <div class="chord-charts-section">
-      <chord-list 
-        chords={JSON.stringify(extractedChords())}
-        instrument={selectedInstrument}
-      ></chord-list>
-    </div>
-  {/if}
-  
-  <!-- Song content using your styling approach -->
-  <div class="chord-sheet-viewer" data-mode={mode}>
-    {#if formattedSheet()}
-      {#if mode === 'html'}
-        {@html formattedSheet()}
-      {:else}
-        <pre>{formattedSheet()}</pre>
+  <!-- Content area with flexible chord list positioning -->
+  <div class="content-area">
+    <!-- Render chord list at top -->
+    {#if chordListPosition === 'top'}
+      {@render chordListComponent()}
+    {/if}
+
+    <div class="main-content" class:has-right-chords={chordListPosition === 'right' && showChords && extractedChords().length > 0}>
+      <!-- Song content using your styling approach -->
+      <div class="chord-sheet-viewer" data-mode={mode}>
+        {#if formattedSheet()}
+          {#if mode === 'html'}
+            {@html formattedSheet()}
+          {:else}
+            <pre>{formattedSheet()}</pre>
+          {/if}
+        {:else}
+          <div>No content</div>
+        {/if}
+      </div>
+      <!-- Render chord list at right (will be positioned with CSS) -->
+      {#if chordListPosition === 'right' && showChords && extractedChords().length > 0}
+        <div class="right-chord-panel">
+          {@render chordListComponent()}
+        </div>
       {/if}
-    {:else}
-      <div>No content</div>
+    </div>
+
+    <!-- Render chord list at bottom -->
+    {#if chordListPosition === 'bottom'}
+      {@render chordListComponent()}
     {/if}
   </div>
 </div>
@@ -235,8 +272,32 @@
     background: #2c5aa0;
   }
 
+  .content-area {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .main-content {
+    flex: 1 0 auto;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* When no right chords, the viewer takes full width */
+  .main-content:not(.has-right-chords) .chord-sheet-viewer {
+    width: 100%;
+  }
+
+  /* When right chords are present, the viewer shares space */
+  .main-content.has-right-chords .chord-sheet-viewer {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
   .chord-charts-section {
-    margin-bottom: 2rem;
     padding: 1rem;
     background: #4a5568;
     border-radius: 8px;
@@ -244,14 +305,34 @@
     flex-shrink: 0;
   }
 
+  .chord-list-top {
+    margin-bottom: 2rem;
+  }
+
+  .chord-list-bottom {
+    margin-top: 2rem;
+  }
+
+  .chord-list-right {
+    margin: 0;
+    height: fit-content;
+    max-height: 100%;
+    overflow: auto;
+  }
+
+  .right-chord-panel {
+    width: 300px;
+    margin-left: 1rem;
+    flex-shrink: 0;
+    overflow: auto;
+  }
+
   .chord-sheet-viewer {
     background-color: antiquewhite;
     color: #2F3131;
-    flex: 1 0 auto;
     overflow: auto;
     padding: 10px;
     white-space: pre;
-    width: 100%;
   }
 
   .chord-sheet-viewer[data-mode=text] {
@@ -290,5 +371,23 @@
   .chord-sheet-viewer[data-mode=html] :global(.row) {
     display: flex;
     line-height: 150%;
+  }
+
+  /* Responsive design for right panel */
+  @media (max-width: 768px) {
+    .songsheet-panel[data-chord-position="right"] .main-content.has-right-chords {
+      flex-direction: column;
+    }
+
+    .songsheet-panel[data-chord-position="right"] .right-chord-panel {
+      width: 100%;
+      margin-left: 0;
+      margin-bottom: 1rem;
+      order: -1; /* Show chord list first on mobile */
+    }
+
+    .songsheet-panel[data-chord-position="right"] .main-content.has-right-chords .chord-sheet-viewer {
+      width: 100%;
+    }
   }
 </style>

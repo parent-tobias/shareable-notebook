@@ -42,11 +42,17 @@
 
   const availableInstruments = [
     'Standard Ukulele',
-    'Baritone Ukulele', 
+    'Baritone Ukulele',
     '5ths tuned Ukulele',
     'Standard Guitar',
     'Drop-D Guitar'
   ];
+
+  const chordListPositions = [
+    { value: 'top', label: 'Top' },
+    { value: 'right', label: 'Right' },
+    { value: 'bottom', label: 'Bottom' }
+  ] as const;
 
   function updateSetting<K extends keyof UserSettings>(key: K, value: UserSettings[K]) {
     settingsStore.updateSetting(key, value);
@@ -196,13 +202,26 @@
 
           <div class="setting-item">
             <label for="chord-instrument-select">Default chord instrument</label>
-            <select 
+            <select
               id="chord-instrument-select"
               value={settings.chordInstrument}
               onchange={(e) => updateSetting('chordInstrument', e.currentTarget.value)}
             >
               {#each availableInstruments as instrument}
                 <option value={instrument}>{instrument}</option>
+              {/each}
+            </select>
+          </div>
+
+          <div class="setting-item">
+            <label for="chord-list-position-select">Chord list position</label>
+            <select
+              id="chord-list-position-select"
+              value={settings.chordListPosition}
+              onchange={(e) => updateSetting('chordListPosition', e.currentTarget.value as 'top' | 'right' | 'bottom')}
+            >
+              {#each chordListPositions as position}
+                <option value={position.value}>{position.label}</option>
               {/each}
             </select>
           </div>

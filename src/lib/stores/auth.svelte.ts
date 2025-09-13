@@ -31,19 +31,29 @@ class AuthStore {
   async initialize() {
     if (this._initialized) return;
     this._initialized = true;
-    
+
     try {
+      console.log('🔧 Initializing auth store...');
+
       // Get initial session
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error('🚨 Error getting initial session:', error);
+      }
+
+      console.log('🔍 Initial session:', session ? 'Found' : 'None');
+
       this._session = session;
       this._user = session?.user ?? null;
-      
+
       // Listen for auth changes
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (event, session) => {
+          console.log('🔄 Auth state change:', event, session ? 'Session present' : 'No session');
+
           this._session = session;
           this._user = session?.user ?? null;
-          
+
           // Send session to notebook store's sync worker
           if (typeof window !== 'undefined') {
             try {
@@ -59,11 +69,13 @@ class AuthStore {
           }
         }
       );
-      
+
+      console.log('✅ Auth store initialized successfully');
+
       // Store subscription for cleanup if needed
       (this as any)._authSubscription = subscription;
     } catch (error) {
-      console.error('Failed to initialize auth:', error);
+      console.error('🚨 Failed to initialize auth:', error);
     } finally {
       this._loading = false;
     }
@@ -130,20 +142,28 @@ class AuthStore {
 
   async signInWithProvider(provider: 'google' | 'github') {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log('🔐 Initiating OAuth sign-in with', provider);
+
+      // Try to open OAuth in the same window to avoid protocol handler issues
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: `http://localhost:5173/auth/callback`  // Use explicit http:// protocol
         }
       });
-      
-      if (error) throw error;
-      
+
+      if (error) {
+        console.error('🚨 OAuth initiation error:', error);
+        throw error;
+      }
+
+      console.log('✅ OAuth initiation successful');
       return { success: true };
     } catch (error: any) {
-      return { 
-        success: false, 
-        error: error.message || 'Failed to sign in with provider' 
+      console.error('🚨 OAuth sign-in failed:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to sign in with provider'
       };
     }
   }
@@ -183,32 +203,84 @@ class AuthStore {
   async handleAuthCallback() {
     try {
       console.log('🔍 Handling auth callback...');
-      
-      // Get the session from the callback URL
-      const { data, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('🚨 Auth callback error:', error);
-        throw error;
-      }
-      
-      if (data.session) {
-        console.log('✅ Auth callback: Session obtained successfully');
+      console.log('🔍 Current URL:', window.location.href);
+
+      // Check if we have OAuth parameters in the URL hash
+      const hashParams = new URLSearchParams(window.location.hash.slice(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      const type = hashParams.get('type');
+
+      if (accessToken && type === 'recovery') {
+        // Handle password recovery
+        console.log('🔄 Handling password recovery callback...');
+        const { data, error } = await supabase.auth.verifyOtp({
+          token_hash: accessToken,
+          type: 'recovery'
+        });
+
+        if (error) throw error;
+
         this._session = data.session;
-        this._user = data.session.user;
+        this._user = data.user;
+
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        return { success: true };
+      }
+
+      if (accessToken) {
+        // Handle OAuth callback with access token
+        console.log('🔍 Found access token in URL, setting session...');
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || ''
+        });
+
+        if (error) {
+          console.error('🚨 Failed to set session from tokens:', error);
+          throw error;
+        }
+
+        if (data.session) {
+          console.log('✅ Auth callback: Session set from URL tokens');
+          this._session = data.session;
+          this._user = data.session.user;
+
+          // Clean up URL hash
+          window.history.replaceState({}, document.title, window.location.pathname);
+
+          return { success: true };
+        }
+      }
+
+      // If no tokens in URL, try to get existing session
+      console.log('🔄 No OAuth tokens found, checking existing session...');
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        console.error('🚨 Session check error:', sessionError);
+        throw sessionError;
+      }
+
+      if (sessionData.session) {
+        console.log('✅ Auth callback: Found existing session');
+        this._session = sessionData.session;
+        this._user = sessionData.session.user;
         return { success: true };
       } else {
         console.warn('⚠️  Auth callback: No session found');
-        return { 
-          success: false, 
-          error: 'No authentication session found' 
+        return {
+          success: false,
+          error: 'No authentication session found'
         };
       }
     } catch (error: any) {
       console.error('🚨 Auth callback exception:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Failed to process authentication callback' 
+      return {
+        success: false,
+        error: error.message || 'Failed to process authentication callback'
       };
     }
   }

@@ -292,10 +292,23 @@ class NotebookStore {
       version: 1
     };
 
-    await db.saveNote(note);
+    // Save to local database
+    await db.notes.put(note);
+
+    // Add to pending changes for sync (as 'create' operation)
+    await db.pendingChanges.add({
+      id: crypto.randomUUID(),
+      entity: 'note',
+      entityId: note.id,
+      operation: 'create',
+      data: note,
+      timestamp: Date.now(),
+      synced: false
+    });
+
     this._notes = [...this._notes, note];
     this._currentNote = note;
-    
+
     // Trigger sync
     this.requestSync();
     
@@ -313,13 +326,26 @@ class NotebookStore {
       version: this._notes[noteIndex].version + 1
     };
 
-    await db.saveNote(updatedNote);
+    // Save to local database
+    await db.notes.put(updatedNote);
+
+    // Add to pending changes for sync
+    await db.pendingChanges.add({
+      id: crypto.randomUUID(),
+      entity: 'note',
+      entityId: noteId,
+      operation: 'update',
+      data: updatedNote,
+      timestamp: Date.now(),
+      synced: false
+    });
+
     this._notes[noteIndex] = updatedNote;
-    
+
     if (this._currentNote?.id === noteId) {
       this._currentNote = updatedNote;
     }
-    
+
     this.requestSync();
   }
 

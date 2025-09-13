@@ -25,15 +25,40 @@ export class ChordList extends LitElement {
 	static styles = css`
 	  :host {
 			display: block;
-			width: 30vw;
-      height: fit-content(100%);
+			width: 100%;
+      height: fit-content;
+			container-type: inline-size;
 		}
+
+		header {
+			margin-bottom: 0.5rem;
+		}
+
+		header h3 {
+			margin: 0;
+			font-size: 1rem;
+			color: #f8f8f8;
+		}
+
 		.list {
-	    display: flex;
-      flex-direction: row;
-      flex-wrap: wrap;
-      justify-content: space-around;
-      align-items: flex-start;
+	    display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 0.5rem;
+      align-items: start;
+		}
+
+		/* Responsive adjustments for different container widths */
+		@container (max-width: 400px) {
+			.list {
+				grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+				gap: 0.3rem;
+			}
+		}
+
+		@container (min-width: 600px) {
+			.list {
+				grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+			}
 		}
 
 	`
@@ -46,18 +71,13 @@ export class ChordList extends LitElement {
 	}
 
 	render(){
-		return html`<header><h3>${this.instrument}</h3></header>
-		<div class='list'>
-			${this.parsedChords.map((chord)=>
-				html`<chord-diagram chord=${chord} instrument='${this.instrument}'></chord-diagram>`
-			)}
-			<style>
-				chord-diagram {
-		  	  width: calc(100%/${this.numChords});
-					min-width:  100px;
-    		}
-			</style>
-		</div>`;
-
+		return html`
+			<header><h3>${this.instrument}</h3></header>
+			<div class='list'>
+				${this.parsedChords.map((chord)=>
+					html`<chord-diagram chord=${chord} instrument='${this.instrument}'></chord-diagram>`
+				)}
+			</div>
+		`;
 	}
 }

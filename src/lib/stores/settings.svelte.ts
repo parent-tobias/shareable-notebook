@@ -8,6 +8,7 @@ export interface UserSettings {
   notifications: boolean;
   defaultNoteType: 'markdown' | 'chordpro' | 'code';
   chordInstrument: string;
+  chordListPosition: 'top' | 'right' | 'bottom';
   fontSize: 'small' | 'medium' | 'large';
   compactMode: boolean;
 }
@@ -19,6 +20,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   notifications: true,
   defaultNoteType: 'markdown',
   chordInstrument: 'Standard Ukulele',
+  chordListPosition: 'top',
   fontSize: 'medium',
   compactMode: false
 };
@@ -87,10 +89,13 @@ class SettingsStore {
 
     this._currentTheme = theme;
 
-    // Apply theme to document
+    // Apply theme to document (Tailwind dark mode)
     const root = document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(theme);
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
     root.setAttribute('data-theme', theme);
 
     console.log('🎨 Applied theme:', theme, 'from setting:', this._settings.theme);
@@ -101,8 +106,11 @@ class SettingsStore {
       this.mediaQueryListener = (e: MediaQueryListEvent) => {
         const newTheme = e.matches ? 'dark' : 'light';
         this._currentTheme = newTheme;
-        root.classList.remove('light', 'dark');
-        root.classList.add(newTheme);
+        if (newTheme === 'dark') {
+          root.classList.add('dark');
+        } else {
+          root.classList.remove('dark');
+        }
         root.setAttribute('data-theme', newTheme);
         console.log('🎨 System theme changed to:', newTheme);
         console.log('🎨 HTML classes after system theme change:', root.className);

@@ -13,13 +13,41 @@ export class ChordDiagram extends LitElement {
 
 	static styles = css`
 	:host {
-		display: inline-block;
-		width: 100px;
-		border: 1px solid silver;
+		display: block;
+		width: 100%;
+		min-width: 100px;
+		max-width: 150px;
+		border: 1px solid #4a5568;
+		border-radius: 4px;
+		background: #2d3748;
+		padding: 0.5rem;
 		box-sizing: border-box;
 	}
+
+	.chord {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		width: 100%;
+	}
+
+	.chord span {
+		color: #f8f8f8;
+		font-size: 0.9rem;
+		font-weight: 500;
+		margin-bottom: 0.25rem;
+		text-align: center;
+	}
+
 	.diagram {
 		width: 100%;
+		display: flex;
+		justify-content: center;
+	}
+
+	.diagram :global(svg) {
+		max-width: 100%;
+		height: auto;
 	}
 	`
 	@property({
@@ -75,9 +103,9 @@ export class ChordDiagram extends LitElement {
 
 
     return html`
-		<div class='chord chart'>
+		<div class='chord'>
       <span>${this.chord.replace(/(maj)$/, '')}</span>
-      <div class='diagram'>${divEl.firstChild}</div>  
+      <div class='diagram'>${divEl.firstChild}</div>
     </div>
     `
   }

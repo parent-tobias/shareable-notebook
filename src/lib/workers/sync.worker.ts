@@ -33,10 +33,26 @@ class WorkerDatabase extends Dexie {
 
   constructor() {
     super('NotebookDB'); // Same database name as main thread
+
+    // Version 1 - original schema
     this.version(1).stores({
       notebooks: 'id, owner_id, updated_at',
       notes: 'id, notebook_id, position, updated_at',
       pendingChanges: 'id, entityId, timestamp, synced' // Make sure synced is indexed
+    });
+
+    // Version 2 - fix synced field data type from number to boolean
+    this.version(2).stores({
+      notebooks: 'id, owner_id, updated_at',
+      notes: 'id, notebook_id, position, updated_at',
+      pendingChanges: 'id, entityId, timestamp, synced'
+    }).upgrade(tx => {
+      // Convert existing numeric synced values to boolean
+      return tx.pendingChanges.toCollection().modify(change => {
+        if (typeof change.synced === 'number') {
+          change.synced = change.synced === 1;
+        }
+      });
     });
   }
 
